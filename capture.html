@@ -14,48 +14,12 @@
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
         
         <script src='https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js'></script>
-        <script type="text/javascript">
-        
-const { createWorker, createScheduler } = Tesseract;
-const scheduler = createScheduler();
-const button = document.getElementById("scan-button");
-const result = document.getElementById("result");
-const image = document.getElementById("input-img");
-
-const recognize = async () => {
-    const { data: { text } } = await scheduler.addJob('recognize', image);
-
-    text.split('\n').forEach((line) => {
-        log(line);
-    });
-}
-
-const log = (message) => {
-    let msg = `<p>${message}</p>`;
-
-    result.innerHTML += msg;
-    result.scrollTop = result.scrollHeight;
-}
-
-(async () => {
-    for (let i = 0; i < 4; i++) {
-        const worker = createWorker();
-        await worker.load();
-        await worker.loadLanguage('eng');
-        await worker.initialize('eng');
-        scheduler.addWorker(worker);
-    }
-
-    button.addEventListener("click", recognize);
-})();
-
-        </script>
     </head>
     <body>
         <div id="wrapper" class="container">
             <div class="row">
                 <div class="col-xs-8">
-                    <img id="input-img" type="image" src="https://img.scryfall.com/cards/large/front/1/6/163fc6f9-6bc3-4483-83bc-aaade4d0be5c.jpg?1551142596" width="100%">
+                    <img id="input-img" type="image" src="https://img.scryfall.com/cards/large/front/1/6/163fc6f9-6bc3-4483-83bc-aaade4d0be5c.jpg" width="100%">
                 </div>
                 <div class="col-xs-4">
                     <a id="scan-button" class="btn btn-primary" role="button">Scan!</a>
@@ -65,5 +29,46 @@ const log = (message) => {
                 </div>
             </div>
         </div>
+        <script type="text/javascript">
+
+    const { createWorker, createScheduler } = Tesseract;
+    const scheduler = createScheduler();
+    const button = document.getElementById('scan-button');
+    const messages = document.getElementById('result');
+
+    const addMessage = (m, bold) => {
+        let msg = `<p>${m}</p>`;
+        if (bold) {
+            msg = `<p class="bold">${m}</p>`;
+        }
+        messages.innerHTML += msg;
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    const doOCR = async () => {
+        const image = document.getElementById("input-img")
+        const start = new Date();
+        const { data: { text } } = await scheduler.addJob('recognize', image);
+        const end = new Date()
+        addMessage(`[${start.getMinutes()}:${start.getSeconds()} - ${end.getMinutes()}:${end.getSeconds()}], ${(end - start) / 1000} s`);
+        text.split('\n').forEach((line) => {
+            addMessage(line);
+        });
+    };
+
+    (async () => {
+        addMessage('Initializing Tesseract.js');
+        for (let i = 0; i < 4; i++) {
+            const worker = createWorker();
+            await worker.load();
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            scheduler.addWorker(worker);
+        }
+        addMessage('Initialized Tesseract.js');
+        button.addEventListener('click', doOCR);
+    })();
+
+        </script>
     </body>
 </html>
